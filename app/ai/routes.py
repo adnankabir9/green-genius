@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, request, flash
 from flask_login import login_required, current_user
 from datetime import datetime
 from bson.objectid import ObjectId
-import openai
+from openai import OpenAI
 
 from app import mongo
 from app.ai.forms import AIQuestionForm
@@ -10,8 +10,8 @@ from config import Config
 
 ai = Blueprint('ai', __name__)
 
-# Load OpenAI API key
-openai.api_key = Config.OPENAI_API_KEY
+# Initialize the OpenAI client
+client = OpenAI(api_key=Config.OPENAI_API_KEY)
 
 @ai.route('/ask', methods=['GET', 'POST'])
 @login_required
@@ -21,7 +21,7 @@ def ask_question():
         question = form.question.data.strip()
 
         try:
-            response = openai.ChatCompletion.create(
+            response = client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
                     {"role": "system", "content": "You are Green Genius, an expert in sustainability."},
