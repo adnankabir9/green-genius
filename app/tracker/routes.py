@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from app.tracker.forms import EcoActionForm, GoalForm
 from app import mongo
-from datetime import datetime
+from datetime import datetime, time
 from bson.objectid import ObjectId
 
 tracker = Blueprint('tracker', __name__)
@@ -30,23 +30,29 @@ def log_action():
 @login_required
 def set_goal():
     form = GoalForm()
+
     if form.validate_on_submit():
+        # Convert date to datetime.datetime
+        target_date = form.target_date.data
+        if target_date:
+            target_date = datetime.combine(target_date, time.min)
+
         goal_data = {
             'user_id': current_user.get_id(),
             'title': form.title.data,
             'description': form.description.data,
             'status': 'in progress',
             'created_at': datetime.utcnow(),
-            'target_date': form.target_date.data if form.target_date.data else None
+            'target_date': target_date  # safe for MongoDB now
         }
+
         mongo.db.sustainability_goals.insert_one(goal_data)
         flash('Goal set successfully!', 'success')
         return redirect(url_for('dashboard.home'))
-    
-    return render_template('tracker/set_goal.html', 
-                          title='Set Sustainability Goal',
-                          form=form)
 
+    return render_template('tracker/set_goal.html',
+                           title='Set Sustainability Goal',
+                           form=form)
 @tracker.route('/update-goal/<goal_id>/<status>')
 @login_required
 def update_goal_status(goal_id, status):

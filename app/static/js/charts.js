@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return fallback;
         } catch (e) {
             console.error(`Error parsing ${variableName}:`, e);
+            
             return fallback;
         }
     }
