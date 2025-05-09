@@ -3,7 +3,6 @@
  * This file handles chart initialization and rendering for the user dashboard
  */
 
-// Main charts initialization function
 document.addEventListener('DOMContentLoaded', function() {
     // Helper to safely get chart contexts
     function getChartContext(id) {
@@ -14,13 +13,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Parse JSON data from the page
     function parseDataFromPage(variableName, fallback) {
         try {
-            if (typeof window[variableName] === 'object') {
+            if (window[variableName] && typeof window[variableName] === 'object') {
                 return window[variableName];
             }
             return fallback;
         } catch (e) {
-            console.error(`Error parsing ${variableName}:`, e);
-            
+            console.error('Error parsing ' + variableName + ':', e);
             return fallback;
         }
     }
@@ -33,7 +31,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Create category chart
     const categoryCtx = getChartContext('categoryChart');
     if (categoryCtx) {
-        // Category names and their corresponding colors
         const categories = [
             { name: 'Energy Conservation', key: 'energy', color: '#28a745' },
             { name: 'Waste Reduction', key: 'waste', color: '#17a2b8' },
@@ -43,7 +40,6 @@ document.addEventListener('DOMContentLoaded', function() {
             { name: 'Other', key: 'other', color: '#6c757d' }
         ];
 
-        // Get category data from the page or use default
         const categoryCounts = parseDataFromPage('categoryCounts', {});
 
         new Chart(categoryCtx, {
@@ -89,7 +85,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Create progress chart
     const progressCtx = getChartContext('progressChart');
     if (progressCtx) {
-        // Get daily actions data from the page or use default
         const dailyActions = parseDataFromPage('dailyActions', []);
 
         new Chart(progressCtx, {
@@ -157,21 +152,19 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Add animation effects to stats cards
+    // Animate the stat cards
     const statsCards = document.querySelectorAll('.col-md-4 .card');
     if (statsCards.length) {
         statsCards.forEach(card => {
             const valueEl = card.querySelector('.card-text');
             if (valueEl) {
                 const value = parseInt(valueEl.textContent, 10);
-                if (!isNaN(value)) {
-                    animateCounter(valueEl, 0, value, 1000);
-                }
+                if (!isNaN(value)) animateCounter(valueEl, 0, value, 1000);
             }
         });
     }
 
-    // Counter animation function
+    // Counter animation helper
     function animateCounter(element, start, end, duration) {
         let startTime = null;
         const step = timestamp => {
@@ -179,9 +172,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const progress = Math.min((timestamp - startTime) / duration, 1);
             const currentValue = Math.floor(progress * (end - start) + start);
             element.textContent = currentValue;
-            if (progress < 1) {
-                window.requestAnimationFrame(step);
-            }
+            if (progress < 1) window.requestAnimationFrame(step);
         };
         window.requestAnimationFrame(step);
     }
