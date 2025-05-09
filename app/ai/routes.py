@@ -3,7 +3,6 @@ from flask_login import login_required, current_user
 from datetime import datetime
 from bson.objectid import ObjectId
 import requests
-import os
 
 from app import mongo
 from app.ai.forms import AIQuestionForm
@@ -12,7 +11,7 @@ from config import Config
 ai = Blueprint('ai', __name__)
 
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
-GROQ_API_KEY = Config.OPENAI_API_KEY 
+GROQ_API_KEY = Config.OPENAI_API_KEY
 
 @ai.route('/ask', methods=['GET', 'POST'])
 @login_required
@@ -40,7 +39,7 @@ def ask_question():
             data = res.json()
             answer = data["choices"][0]["message"]["content"].strip()
 
-            # Save to DB
+            # Save to MongoDB
             result = mongo.db.ai_suggestions.insert_one({
                 "user_id": current_user.get_id(),
                 "question": question,
@@ -49,7 +48,12 @@ def ask_question():
                 "saved": False
             })
 
-            return render_template('ai/response.html', question=question, response=answer, suggestion_id=result.inserted_id)
+            return render_template(
+                'ai/response.html',
+                question=question,
+                response=answer,
+                suggestion_id=result.inserted_id
+            )
 
         except Exception as e:
             flash("There was an error with the AI service. Please try again later.", "danger")
@@ -70,5 +74,22 @@ def save_suggestion(suggestion_id):
 @ai.route('/history')
 @login_required
 def view_history():
-    suggestions = list(mongo.db.ai_suggestions.find({'user_id': current_user.get_id()}).sort('timestamp', -1))
+    suggestions = list(
+        mongo.db.ai_suggestions.find({'user_id': current_user.get_id()})
+        .sort('timestamp', -1)
+    )
     return render_template('ai/history.html', suggestions=suggestions)
+
+@ai.route('/view/<suggestion_id>')
+@login_required
+def view_suggestion(suggestion_id):
+    suggestion = mongo.db.ai_suggestions.find_one({
+        '_id': ObjectId(suggestion_id),
+        'user_id': current_user.get_id()
+    })
+
+    if not suggestion:
+        flash("Suggestion not found.", "danger")
+        return redirect(url_for('ai.view_history'))
+
+    return render_template('ai/suggestion_detail.html', suggestion=suggestion)
