@@ -2,7 +2,8 @@ from flask import Blueprint, render_template, redirect, url_for, request, flash
 from flask_login import login_required, current_user
 from datetime import datetime
 from bson.objectid import ObjectId
-from openai import OpenAI
+import requests
+import os
 
 from app import mongo
 from app.ai.forms import AIQuestionForm
@@ -10,8 +11,8 @@ from config import Config
 
 ai = Blueprint('ai', __name__)
 
-# Initialize the OpenAI client
-client = OpenAI(api_key=Config.OPENAI_API_KEY)
+GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
+GROQ_API_KEY = Config.OPENAI_API_KEY 
 
 @ai.route('/ask', methods=['GET', 'POST'])
 @login_required
@@ -20,15 +21,24 @@ def ask_question():
     if form.validate_on_submit():
         question = form.question.data.strip()
 
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {GROQ_API_KEY}"
+        }
+
+        payload = {
+            "model": "meta-llama/llama-4-scout-17b-16e-instruct",
+            "messages": [
+                {"role": "system", "content": "You are Green Genius, an expert in sustainability."},
+                {"role": "user", "content": question}
+            ]
+        }
+
         try:
-            response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": "You are Green Genius, an expert in sustainability."},
-                    {"role": "user", "content": question}
-                ]
-            )
-            answer = response.choices[0].message.content.strip()
+            res = requests.post(GROQ_API_URL, headers=headers, json=payload)
+            res.raise_for_status()
+            data = res.json()
+            answer = data["choices"][0]["message"]["content"].strip()
 
             # Save to DB
             result = mongo.db.ai_suggestions.insert_one({
@@ -43,7 +53,7 @@ def ask_question():
 
         except Exception as e:
             flash("There was an error with the AI service. Please try again later.", "danger")
-            print(e)
+            print("Groq API Error:", e)
 
     return render_template('ai/ask.html', form=form)
 
