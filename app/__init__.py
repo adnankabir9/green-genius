@@ -3,6 +3,10 @@ from flask_pymongo import PyMongo
 from flask_login import LoginManager
 from config import Config
 
+
+import markdown
+from flask import Markup
+
 mongo = PyMongo()
 login_manager = LoginManager()
 login_manager.login_view = 'auth.login'
@@ -24,6 +28,8 @@ def create_app(config_class=Config):
     app.register_blueprint(ai, url_prefix='/ai')
     app.register_blueprint(tracker, url_prefix='/tracker')
     app.register_blueprint(dashboard, url_prefix='/dashboard')
+
+    app.jinja_env.filters['markdown'] = lambda text: Markup(markdown.markdown(text))
     
     @app.route('/')
     def index():
