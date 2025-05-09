@@ -150,9 +150,8 @@
 {% block scripts %}
 <script>
   document.addEventListener('DOMContentLoaded', () => {
-    // note: escapejs makes sure quotes are properly escaped inside the JS string
-    const categoryCounts = JSON.parse('{{ category_counts|tojson|escapejs }}');
-    const dailyActions   = JSON.parse('{{ daily_actions  |tojson|escapejs }}');
+    const categoryCounts = JSON.parse('{{ category_counts|tojson}}');
+    const dailyActions   = JSON.parse('{{ daily_actions  |tojson}}');
 
     // Category Chart
     new Chart(
